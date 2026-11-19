@@ -235,6 +235,14 @@
           <select id="f_type"></select>
         </div>
         <div class="form-item">
+          <label>图标</label>
+          <div id="iconPicker" style="display:flex;align-items:center;gap:8px">
+            <div id="iconPreview" style="width:40px;height:40px;border-radius:10px;background:#eef2ff;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">📦</div>
+            <button type="button" class="btn btn-sm" style="flex:1" onclick="openIconPanel()">选择图标</button>
+            <button type="button" class="btn btn-sm" onclick="clearIcon()" title="清除自定义图标">清除</button>
+          </div>
+        </div>
+        <div class="form-item">
           <label>品牌</label>
           <input type="text" id="f_brand" placeholder="如：Apple">
         </div>
@@ -334,6 +342,19 @@
   </div>
 </div>
 
+<!-- 图标选择面板 -->
+<div class="modal-mask" id="iconModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>选择图标</h2>
+      <button class="modal-close" onclick="closeIconPanel()">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="iconGrid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px"></div>
+    </div>
+  </div>
+</div>
+
 <input type="file" id="importFile" accept=".json" style="display:none">
 <div class="toast" id="toast"></div>
 
@@ -358,6 +379,17 @@ const TYPE_STYLE = {
   '其他': { icon: '📦', bg: '#f2f3f5' }
 };
 
+// 预设图标库（添加设备时可选择）
+const ICON_LIBRARY = [
+  '📱', '💻', '🖥', '🖨', '📟', '⌨️', '🖱', '🖲', '🎧', '🎮',
+  '📷', '📹', '📺', '⌚', '💾', '💿', '📀', '🖊', '🔋', '🔌',
+  '🔊', '🎤', '🎙', '🛰', '📡', '📼', '📻', '📠', '☎️', '🕹',
+  '🧮', '🔦', '🪫', '🖱️', '🖥️', '💽', '🧭', '🎛', '⏱', '⏰',
+  '📲', '📳', '🖥️', '🖨️', '🖱️', '📷', '🎥', '🎞', '📽', '🛸',
+  '💻', '🖥️', '⌨️', '🖱️', '📱', '⌚', '🎧', '📷', '🎮', '💾',
+  '📦', '🔧', '⚙️', '🔩', '🪛', '📐', '📏', '🧰', '🔒', '🖍'
+];
+
 let devices = [];
 let categories = [];
 let editingId = null;
@@ -365,6 +397,7 @@ let viewingId = null;
 let currentFilter = '';
 let currentSort = 'daily_desc'; // daily_desc | daily_asc | price_desc | price_asc
 let currentTab = 'list';
+let selectedIcon = ''; // 当前表单中选中的图标
 
 // ---------- 数据层（读写本地 data.json 文件） ----------
 async function load() {
@@ -428,6 +461,14 @@ function fmtMoney(n) {
 }
 function fmtDaily(n) {
   return '¥' + Number(n || 0).toFixed(2) + '/天';
+}
+// 获取设备的图标和背景色：优先使用自定义 icon 字段，否则按类型匹配
+function getIconStyle(d) {
+  const fallback = TYPE_STYLE[d.type] || TYPE_STYLE['其他'];
+  if (d.icon) {
+    return { icon: d.icon, bg: fallback.bg };
+  }
+  return fallback;
 }
 
 // ---------- 渲染 ----------
@@ -495,7 +536,7 @@ function renderList() {
   }
 
   el.innerHTML = list.map(d => {
-    const st = TYPE_STYLE[d.type] || TYPE_STYLE['其他'];
+    const st = getIconStyle(d);
     const days = usageDays(d);
     const daily = dailyCost(d);
     const sub = [d.brand, d.model].filter(Boolean).join(' · ') || d.status;
@@ -611,6 +652,40 @@ function openStats() {
 }
 function closeStats() { document.getElementById('statsModal').classList.remove('show'); }
 
+// ---------- 图标选择 ----------
+function openIconPanel() {
+  renderIconGrid();
+  document.getElementById('iconModal').classList.add('show');
+}
+function closeIconPanel() { document.getElementById('iconModal').classList.remove('show'); }
+function renderIconGrid() {
+  const el = document.getElementById('iconGrid');
+  el.innerHTML = ICON_LIBRARY.map(icon => `
+    <button type="button" onclick="selectIcon('${icon}')" style="
+      width:100%;aspect-ratio:1;font-size:26px;border:1px solid var(--border);border-radius:12px;
+      background:${selectedIcon === icon ? '#eef2ff' : '#fff'};cursor:pointer;display:flex;align-items:center;justify-content:center;
+      transition:all .15s;outline:none;${selectedIcon === icon ? 'border-color:var(--primary);box-shadow:0 0 0 2px rgba(59,124,255,.2)' : ''}
+    ">${icon}</button>
+  `).join('');
+}
+function selectIcon(icon) {
+  selectedIcon = icon;
+  updateIconPreview();
+  renderIconGrid();
+  closeIconPanel();
+}
+function clearIcon() {
+  selectedIcon = '';
+  updateIconPreview();
+}
+function updateIconPreview() {
+  const el = document.getElementById('iconPreview');
+  const type = document.getElementById('f_type') ? document.getElementById('f_type').value : '';
+  const fallback = TYPE_STYLE[type] || TYPE_STYLE['其他'];
+  el.textContent = selectedIcon || fallback.icon;
+  el.style.background = fallback.bg;
+}
+
 // ---------- 分类管理 ----------
 function openCategoryMgr() {
   renderCategoryList();
@@ -696,6 +771,7 @@ function saveDevice() {
   const data = {
     name,
     type: document.getElementById('f_type').value,
+    icon: selectedIcon,
     brand: document.getElementById('f_brand').value.trim(),
     model: document.getElementById('f_model').value.trim(),
     date: document.getElementById('f_date').value,
@@ -776,6 +852,8 @@ function clearForm() {
   document.getElementById('f_type').value = categories[0] || '';
   document.getElementById('f_status').value = '在用';
   document.getElementById('f_fav').value = '';
+  selectedIcon = '';
+  updateIconPreview();
 }
 function fillForm(d) {
   document.getElementById('f_name').value = d.name || '';
@@ -789,6 +867,8 @@ function fillForm(d) {
   document.getElementById('f_status').value = d.status || '在用';
   document.getElementById('f_fav').value = d.fav || '';
   document.getElementById('f_note').value = d.note || '';
+  selectedIcon = d.icon || '';
+  updateIconPreview();
 }
 function closeModal() { document.getElementById('editModal').classList.remove('show'); editingId = null; }
 
@@ -863,6 +943,12 @@ document.getElementById('editModal').addEventListener('click', e => { if (e.targ
 document.getElementById('detailModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeDetail(); });
 document.getElementById('statsModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeStats(); });
 document.getElementById('categoryModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeCategoryMgr(); });
+document.getElementById('iconModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeIconPanel(); });
+
+// 设备类型变化时，同步更新图标预览（未选自定义图标时跟随类型）
+document.getElementById('f_type').addEventListener('change', function() {
+  if (!selectedIcon) updateIconPreview();
+});
 
 // 初始化
 (async function init() {
