@@ -1,6 +1,13 @@
 # 依赖
 node_modules/
 
+# 用户数据文件（本地数据不提交）
+data.json
+
+# Python 缓存
+__pycache__/
+*.pyc
+
 # 日志
 *.log
 

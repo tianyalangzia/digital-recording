@@ -321,7 +321,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const STORAGE_KEY = 'digital_devices';
+const API_BASE = '/api/data';
 const DEVICE_TYPES = ['笔记本电脑', '手机', '平板', '耳机', '显示器', '硬盘', '键盘', '鼠标', '手柄', '相机', '智能手表', '其他'];
 const STATUSES = ['在用', '备用', '已出售', '已报废'];
 
@@ -348,16 +348,33 @@ let currentFilter = '';
 let currentSort = 'daily_desc'; // daily_desc | daily_asc | price_desc | price_asc
 let currentTab = 'list';
 
-// ---------- 数据层 ----------
-function load() {
+// ---------- 数据层（读写本地 data.json 文件） ----------
+async function load() {
   try {
-    devices = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+    const res = await fetch(API_BASE);
+    const data = await res.json();
+    devices = Array.isArray(data) ? data : [];
   } catch (e) {
     devices = [];
+    toast('无法连接本地服务，请确认已启动 server.py');
   }
 }
+let _saveChain = Promise.resolve();
 function save() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(devices));
+  // 串行化写入，避免并发请求导致 data.json 内容乱序
+  const snapshot = JSON.stringify(devices);
+  _saveChain = _saveChain.then(async () => {
+    try {
+      await fetch(API_BASE, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: snapshot
+      });
+    } catch (e) {
+      toast('保存失败，请确认本地服务已启动');
+    }
+  });
+  return _saveChain;
 }
 
 // ---------- 计算工具 ----------
@@ -737,12 +754,12 @@ document.getElementById('detailModal').addEventListener('click', e => { if (e.ta
 document.getElementById('statsModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeStats(); });
 
 // 初始化
-(function init() {
+(async function init() {
   const typeSel = document.getElementById('f_type');
   DEVICE_TYPES.forEach(t => {
     typeSel.insertAdjacentHTML('beforeend', `<option value="${t}">${t}</option>`);
   });
-  load();
+  await load();
   render();
 })();
 </script>
