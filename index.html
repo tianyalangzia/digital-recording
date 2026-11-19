@@ -28,7 +28,7 @@
     min-height: 100vh;
   }
   .app {
-    max-width: 720px;
+    max-width: 480px;
     margin: 0 auto;
     padding: 20px 16px 110px;
   }
@@ -113,7 +113,7 @@
   /* ===== 底部导航 ===== */
   .tabbar {
     position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-    width: calc(100% - 40px); max-width: 560px;
+    width: calc(100% - 40px); max-width: 440px;
     background: rgba(255,255,255,0.9); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
     border-radius: 24px; box-shadow: 0 8px 30px rgba(0,0,0,0.12); border: 1px solid rgba(255,255,255,0.6);
     display: flex; z-index: 50; padding: 8px;
@@ -317,12 +317,29 @@
   </div>
 </div>
 
+<!-- 分类管理弹窗 -->
+<div class="modal-mask" id="categoryModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>分类管理</h2>
+      <button class="modal-close" onclick="closeCategoryMgr()">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <input type="text" id="newCategory" placeholder="输入新分类名称" style="flex:1;padding:10px 12px;border:1px solid var(--border);border-radius:10px;font-size:14px;outline:none" onkeydown="if(event.key==='Enter')addCategory()">
+        <button class="btn btn-primary" onclick="addCategory()">添加</button>
+      </div>
+      <div id="categoryList" style="display:flex;flex-direction:column;gap:8px"></div>
+    </div>
+  </div>
+</div>
+
 <input type="file" id="importFile" accept=".json" style="display:none">
 <div class="toast" id="toast"></div>
 
 <script>
 const API_BASE = '/api/data';
-const DEVICE_TYPES = ['笔记本电脑', '手机', '平板', '耳机', '显示器', '硬盘', '键盘', '鼠标', '手柄', '相机', '智能手表', '其他'];
+const DEFAULT_CATEGORIES = ['笔记本电脑', '手机', '平板', '耳机', '显示器', '硬盘', '键盘', '鼠标', '手柄', '相机', '智能手表', '其他'];
 const STATUSES = ['在用', '备用', '已出售', '已报废'];
 
 // 类型图标与配色
@@ -342,6 +359,7 @@ const TYPE_STYLE = {
 };
 
 let devices = [];
+let categories = [];
 let editingId = null;
 let viewingId = null;
 let currentFilter = '';
@@ -353,16 +371,31 @@ async function load() {
   try {
     const res = await fetch(API_BASE);
     const data = await res.json();
-    devices = Array.isArray(data) ? data : [];
+    if (data && Array.isArray(data.devices)) {
+      devices = data.devices;
+      categories = Array.isArray(data.categories) ? data.categories : [];
+    } else {
+      devices = [];
+      categories = [];
+    }
+    // 若分类为空，用默认分类兜底
+    if (categories.length === 0) {
+      categories = [...DEFAULT_CATEGORIES];
+    }
+    // 保证所有设备已有的 type 都在分类里（防止旧数据有未知分类）
+    devices.forEach(d => {
+      if (d.type && !categories.includes(d.type)) categories.push(d.type);
+    });
   } catch (e) {
     devices = [];
+    categories = [...DEFAULT_CATEGORIES];
     toast('无法连接本地服务，请确认已启动 server.py');
   }
 }
 let _saveChain = Promise.resolve();
 function save() {
   // 串行化写入，避免并发请求导致 data.json 内容乱序
-  const snapshot = JSON.stringify(devices);
+  const snapshot = JSON.stringify({ devices, categories });
   _saveChain = _saveChain.then(async () => {
     try {
       await fetch(API_BASE, {
@@ -415,10 +448,10 @@ function renderHero() {
 
 function renderFilterBar() {
   const el = document.getElementById('filterBar');
-  const chips = ['全部', ...DEVICE_TYPES.filter(t => devices.some(d => d.type === t))];
+  const chips = ['全部', ...categories];
   el.innerHTML = `
-    <div class="filter-icon">◔</div>
-    ${chips.map(t => `<button class="chip ${currentFilter === t ? 'active' : ''}" onclick="setFilter('${t}')">${t}</button>`).join('')}
+    <div class="filter-icon" title="分类管理" onclick="openCategoryMgr()" style="cursor:pointer">⚙</div>
+    ${chips.map((t, i) => `<button class="chip ${currentFilter === t ? 'active' : ''}" onclick="setFilterByIdx(${i})">${esc(t)}</button>`).join('')}
     <button class="sort-btn" title="切换排序" onclick="cycleSort()">${sortIcon()}</button>
   `;
 }
@@ -483,6 +516,10 @@ function renderList() {
 }
 
 // ---------- 筛选 / 排序 ----------
+function setFilterByIdx(idx) {
+  currentFilter = idx === 0 ? '全部' : (categories[idx - 1] || '全部');
+  render();
+}
 function setFilter(t) {
   currentFilter = t;
   render();
@@ -574,6 +611,58 @@ function openStats() {
 }
 function closeStats() { document.getElementById('statsModal').classList.remove('show'); }
 
+// ---------- 分类管理 ----------
+function openCategoryMgr() {
+  renderCategoryList();
+  document.getElementById('newCategory').value = '';
+  document.getElementById('categoryModal').classList.add('show');
+}
+function closeCategoryMgr() { document.getElementById('categoryModal').classList.remove('show'); }
+function renderCategoryList() {
+  const el = document.getElementById('categoryList');
+  el.innerHTML = categories.map((t, i) => {
+    const cnt = devices.filter(d => d.type === t).length;
+    const st = TYPE_STYLE[t] || { icon: '📦', bg: '#f2f3f5' };
+    return `
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:#f7f8fa;border-radius:10px">
+      <span style="width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:${st.bg};font-size:16px">${st.icon}</span>
+      <span style="flex:1;font-size:14px">${esc(t)}</span>
+      <span style="font-size:12px;color:var(--muted)">${cnt} 件</span>
+      <button class="icon-btn del" style="font-size:16px" title="删除分类" onclick="removeCategory(${i})">🗑</button>
+    </div>`;
+  }).join('');
+}
+function addCategory() {
+  const input = document.getElementById('newCategory');
+  const name = input.value.trim();
+  if (!name) { toast('请输入分类名称'); return; }
+  if (categories.includes(name)) { toast('该分类已存在'); return; }
+  categories.push(name);
+  input.value = '';
+  renderCategoryList();
+  renderTypeOptions();
+  render();
+  save();
+  toast('已添加分类');
+}
+function removeCategory(idx) {
+  const name = categories[idx];
+  const cnt = devices.filter(d => d.type === name).length;
+  if (cnt > 0) {
+    if (!confirm(`分类"${name}"下有 ${cnt} 件设备，删除后这些设备将变为"其他"分类。确定删除吗？`)) return;
+    devices.forEach(d => { if (d.type === name) d.type = '其他'; });
+    if (!categories.includes('其他')) categories.push('其他');
+  }
+  categories.splice(idx, 1);
+  if (categories.length === 0) categories = ['其他'];
+  if (currentFilter === name) currentFilter = '全部';
+  renderCategoryList();
+  renderTypeOptions();
+  render();
+  save();
+  toast('已删除分类');
+}
+
 function clearAll() {
   if (!confirm('确定清空所有设备数据吗？此操作不可恢复，建议先导出备份。')) return;
   devices = [];
@@ -586,6 +675,7 @@ function clearAll() {
 function openAdd() {
   editingId = null;
   document.getElementById('editTitle').textContent = '添加设备';
+  renderTypeOptions();
   clearForm();
   document.getElementById('editModal').classList.add('show');
 }
@@ -594,6 +684,7 @@ function openEdit(id) {
   if (!d) return;
   editingId = id;
   document.getElementById('editTitle').textContent = '编辑设备';
+  renderTypeOptions();
   fillForm(d);
   document.getElementById('editModal').classList.add('show');
   if (viewingId) closeDetail();
@@ -676,15 +767,19 @@ function deleteFromDetail() {
 function closeDetail() { document.getElementById('detailModal').classList.remove('show'); viewingId = null; }
 
 // ---------- 表单辅助 ----------
+function renderTypeOptions() {
+  const sel = document.getElementById('f_type');
+  sel.innerHTML = categories.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
+}
 function clearForm() {
   ['f_name','f_brand','f_model','f_date','f_price','f_channel','f_sn','f_note'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('f_type').value = DEVICE_TYPES[0];
+  document.getElementById('f_type').value = categories[0] || '';
   document.getElementById('f_status').value = '在用';
   document.getElementById('f_fav').value = '';
 }
 function fillForm(d) {
   document.getElementById('f_name').value = d.name || '';
-  document.getElementById('f_type').value = d.type || DEVICE_TYPES[0];
+  document.getElementById('f_type').value = d.type || categories[0] || '';
   document.getElementById('f_brand').value = d.brand || '';
   document.getElementById('f_model').value = d.model || '';
   document.getElementById('f_date').value = d.date || '';
@@ -699,7 +794,8 @@ function closeModal() { document.getElementById('editModal').classList.remove('s
 
 // ---------- 导出 / 导入 ----------
 function exportData() {
-  const blob = new Blob([JSON.stringify(devices, null, 2)], { type: 'application/json' });
+  const payload = { devices, categories };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -718,9 +814,23 @@ document.getElementById('importFile').addEventListener('change', function(e) {
   reader.onload = function() {
     try {
       const data = JSON.parse(reader.result);
-      if (!Array.isArray(data)) throw new Error('格式错误');
-      if (!confirm(`将导入 ${data.length} 件资产，是否覆盖当前数据？`)) return;
-      devices = data.map(d => ({ ...d, id: d.id || genId() }));
+      let newDevices, newCategories;
+      if (Array.isArray(data)) {
+        // 旧格式：纯设备数组
+        newDevices = data;
+        newCategories = [...DEFAULT_CATEGORIES];
+      } else if (data && Array.isArray(data.devices)) {
+        newDevices = data.devices;
+        newCategories = Array.isArray(data.categories) && data.categories.length ? data.categories : [...DEFAULT_CATEGORIES];
+      } else {
+        throw new Error('格式错误');
+      }
+      if (!confirm(`将导入 ${newDevices.length} 件资产，是否覆盖当前数据？`)) return;
+      devices = newDevices.map(d => ({ ...d, id: d.id || genId() }));
+      categories = newCategories;
+      // 保证设备类型都在分类里
+      devices.forEach(d => { if (d.type && !categories.includes(d.type)) categories.push(d.type); });
+      renderTypeOptions();
       save();
       render();
       toast('导入成功');
@@ -752,14 +862,12 @@ function toast(msg) {
 document.getElementById('editModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
 document.getElementById('detailModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeDetail(); });
 document.getElementById('statsModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeStats(); });
+document.getElementById('categoryModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeCategoryMgr(); });
 
 // 初始化
 (async function init() {
-  const typeSel = document.getElementById('f_type');
-  DEVICE_TYPES.forEach(t => {
-    typeSel.insertAdjacentHTML('beforeend', `<option value="${t}">${t}</option>`);
-  });
   await load();
+  renderTypeOptions();
   render();
 })();
 </script>

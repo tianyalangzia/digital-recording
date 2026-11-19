@@ -22,15 +22,29 @@ INDEX_FILE = os.path.join(BASE_DIR, "index.html")
 
 
 def load_data():
-    """读取数据文件，不存在或损坏时返回空列表。"""
+    """读取数据文件，返回 {devices: [], categories: []}。
+
+    兼容旧格式：如果文件里是纯数组（旧版设备列表），自动迁移为新格式。
+    """
     if not os.path.exists(DATA_FILE):
-        return []
+        return {"devices": [], "categories": []}
     try:
         with open(DATA_FILE, "r", encoding="utf-8") as f:
             data = json.load(f)
-            return data if isinstance(data, list) else []
     except (json.JSONDecodeError, OSError):
-        return []
+        return {"devices": [], "categories": []}
+
+    if isinstance(data, list):
+        # 旧格式：纯设备数组
+        return {"devices": data, "categories": []}
+    if isinstance(data, dict):
+        devices = data.get("devices")
+        categories = data.get("categories")
+        return {
+            "devices": devices if isinstance(devices, list) else [],
+            "categories": categories if isinstance(categories, list) else [],
+        }
+    return {"devices": [], "categories": []}
 
 
 def save_data(data):
@@ -79,10 +93,14 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 raw = self.rfile.read(length).decode("utf-8")
                 data = json.loads(raw)
-                if not isinstance(data, list):
-                    raise ValueError("data must be a list")
-                save_data(data)
-                self._send_json({"ok": True, "count": len(data)})
+                if not isinstance(data, dict):
+                    raise ValueError("data must be an object")
+                devices = data.get("devices")
+                categories = data.get("categories")
+                if not isinstance(devices, list) or not isinstance(categories, list):
+                    raise ValueError("devices and categories must be lists")
+                save_data({"devices": devices, "categories": categories})
+                self._send_json({"ok": True, "count": len(devices)})
             except (json.JSONDecodeError, ValueError) as e:
                 self._send_json({"ok": False, "error": str(e)}, status=400)
         else:
