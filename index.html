@@ -128,22 +128,89 @@
   /* ===== 弹窗 ===== */
   .modal-mask { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: none; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
   .modal-mask.show { display: flex; }
-  .modal { background: #fff; border-radius: 18px; width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
-  .modal-head { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: #fff; z-index: 1; }
+  .modal { background: #fff; border-radius: 18px; width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; overflow-x: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }  .modal-head { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: #fff; z-index: 1; }
   .modal-head h2 { font-size: 18px; font-weight: 600; }
   .modal-close { border: none; background: transparent; font-size: 24px; cursor: pointer; color: var(--muted); line-height: 1; }
   .modal-body { padding: 20px 24px; }
   .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-  .form-item { display: flex; flex-direction: column; gap: 6px; }
+  .form-item { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
   .form-item.full { grid-column: 1 / -1; }
   .form-item label { font-size: 13px; color: #5a616c; font-weight: 500; }
   .form-item input, .form-item select, .form-item textarea {
-    padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 14px;
-    outline: none; transition: border .15s; font-family: inherit; background: #fff; color: var(--text);
+    width: 100%; padding: 10px 16px; border: 1px solid var(--border); border-radius: 999px; font-size: 14px;
+    outline: none; transition: border .15s, box-shadow .15s; font-family: inherit; background: #fff; color: var(--text);
   }
-  .form-item input:focus, .form-item select:focus, .form-item textarea:focus { border-color: var(--primary); }
-  .form-item textarea { resize: vertical; min-height: 60px; }
+  .form-item input:focus, .form-item select:focus, .form-item textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59,124,255,.12); }
+  .form-item select {
+    appearance: none; -webkit-appearance: none; -moz-appearance: none; border-radius: 999px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238a919f' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 16px center; padding-right: 42px; cursor: pointer;
+  }
+  .form-item textarea { resize: vertical; min-height: 60px; border-radius: 18px; }
   .form-item .required::after { content: " *"; color: var(--danger); }
+
+  /* 自定义下拉组件（圆角选项列表） */
+  .custom-select { position: relative; }
+  .custom-select .cs-trigger {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 10px 16px; border: 1px solid var(--border); border-radius: 999px; font-size: 14px;
+    background: #fff; color: var(--text); cursor: pointer; transition: border .15s, box-shadow .15s; min-height: 41px;
+  }
+  .custom-select .cs-trigger:hover { border-color: #c9ced6; }
+  .custom-select.open .cs-trigger { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59,124,255,.12); }
+  .custom-select .cs-arrow {
+    width: 12px; height: 12px; flex-shrink: 0; transition: transform .2s;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238a919f' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: center;
+  }
+  .custom-select.open .cs-arrow { transform: rotate(180deg); }
+  .custom-select .cs-menu {
+    position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 300;
+    background: #fff; border: 1px solid var(--border); border-radius: 14px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.12); overflow: hidden; max-height: 260px; overflow-y: auto;
+    display: none; padding: 4px;
+  }
+  .custom-select.open .cs-menu { display: block; }
+  .custom-select .cs-option {
+    display: block; width: 100%; text-align: left; padding: 10px 14px; border: none; background: transparent;
+    font-size: 14px; color: var(--text); cursor: pointer; border-radius: 10px; transition: background .12s;
+  }
+  .custom-select .cs-option:hover { background: #f2f3f5; }
+  .custom-select .cs-option.selected { background: #eef2ff; color: var(--primary); font-weight: 500; }
+
+  /* 日期选择器 */
+  .custom-select .cs-calendar {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238a919f' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='3'/%3E%3Cline x1='16' y1='2' x2='16' y2='6'/%3E%3Cline x1='8' y1='2' x2='8' y2='6'/%3E%3Cline x1='3' y1='10' x2='21' y2='10'/%3E%3C/svg%3E");
+    width: 16px; height: 16px;
+  }
+  .custom-select .cs-value.placeholder { color: var(--muted); }
+  .date-panel {
+    position: fixed; z-index: 400;
+    background: #fff; border: 1px solid var(--border); border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.15); padding: 14px; width: 280px;
+    display: none;
+  }
+  .custom-select.open .date-panel { display: block; }
+  .date-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .date-head .d-nav { border: none; background: #f2f3f5; width: 30px; height: 30px; border-radius: 8px; cursor: pointer; font-size: 16px; color: #5a616c; display: flex; align-items: center; justify-content: center; transition: background .12s; }
+  .date-head .d-nav:hover { background: #e2e5ea; }
+  .date-head .d-title { font-size: 14px; font-weight: 600; }
+  .date-week { display: grid; grid-template-columns: repeat(7, 1fr); margin-bottom: 4px; }
+  .date-week span { text-align: center; font-size: 11px; color: var(--muted); padding: 4px 0; }
+  .date-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+  .date-days .d-cell {
+    aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 13px;
+    border: none; background: transparent; border-radius: 8px; cursor: pointer; color: var(--text); transition: all .12s;
+  }
+  .date-days .d-cell:hover { background: #f2f3f5; }
+  .date-days .d-cell.other { color: #c4c9d2; }
+  .date-days .d-cell.selected { background: var(--primary); color: #fff; font-weight: 600; }
+  .date-days .d-cell.today { border: 1px solid var(--primary); color: var(--primary); }
+  .date-days .d-cell.selected.today { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .date-foot { display: flex; justify-content: space-between; margin-top: 10px; }
+  .date-foot button { border: none; background: transparent; color: var(--primary); font-size: 13px; cursor: pointer; padding: 4px 8px; border-radius: 6px; }
+  .date-foot button:hover { background: #eef2ff; }
+
   .modal-foot { display: flex; justify-content: flex-end; gap: 10px; padding: 16px 24px; border-top: 1px solid var(--border); position: sticky; bottom: 0; background: #fff; }
 
   .btn {
@@ -165,9 +232,10 @@
   .toast { position: fixed; top: 24px; left: 50%; transform: translateX(-50%); background: #1f2329; color: #fff; padding: 10px 20px; border-radius: 10px; font-size: 14px; z-index: 200; opacity: 0; transition: opacity .2s; pointer-events: none; }
   .toast.show { opacity: 1; }
 
-  @media (max-width: 560px) {
+  @media (max-width: 640px) {
     .form-grid, .detail-grid { grid-template-columns: 1fr; }
     .hero-stat .value { font-size: 22px; }
+    .modal { max-width: 100%; }
   }
 </style>
 </head>
@@ -232,7 +300,14 @@
         </div>
         <div class="form-item">
           <label>设备类型</label>
-          <select id="f_type"></select>
+          <div class="custom-select" id="cs_type">
+            <div class="cs-trigger" onclick="toggleCustomSelect('cs_type')">
+              <span class="cs-value">请选择</span>
+              <span class="cs-arrow"></span>
+            </div>
+            <div class="cs-menu"></div>
+          </div>
+          <select id="f_type" style="display:none"></select>
         </div>
         <div class="form-item">
           <label>图标</label>
@@ -252,7 +327,14 @@
         </div>
         <div class="form-item">
           <label>购买日期</label>
-          <input type="date" id="f_date">
+          <div class="custom-select" id="cs_date">
+            <div class="cs-trigger" onclick="toggleDatePicker()">
+              <span class="cs-value" id="dateValue">请选择日期</span>
+              <span class="cs-arrow cs-calendar"></span>
+            </div>
+            <div class="date-panel" id="datePanel"></div>
+          </div>
+          <input type="date" id="f_date" style="display:none">
         </div>
         <div class="form-item">
           <label>购买价格（元）</label>
@@ -268,7 +350,14 @@
         </div>
         <div class="form-item">
           <label>使用状态</label>
-          <select id="f_status">
+          <div class="custom-select" id="cs_status">
+            <div class="cs-trigger" onclick="toggleCustomSelect('cs_status')">
+              <span class="cs-value">在用</span>
+              <span class="cs-arrow"></span>
+            </div>
+            <div class="cs-menu"></div>
+          </div>
+          <select id="f_status" style="display:none">
             <option value="在用">在用</option>
             <option value="备用">备用</option>
             <option value="已出售">已出售</option>
@@ -277,7 +366,14 @@
         </div>
         <div class="form-item">
           <label>收藏</label>
-          <select id="f_fav">
+          <div class="custom-select" id="cs_fav">
+            <div class="cs-trigger" onclick="toggleCustomSelect('cs_fav')">
+              <span class="cs-value">否</span>
+              <span class="cs-arrow"></span>
+            </div>
+            <div class="cs-menu"></div>
+          </div>
+          <select id="f_fav" style="display:none">
             <option value="">否</option>
             <option value="1">是</option>
           </select>
@@ -843,9 +939,199 @@ function deleteFromDetail() {
 function closeDetail() { document.getElementById('detailModal').classList.remove('show'); viewingId = null; }
 
 // ---------- 表单辅助 ----------
+// 自定义下拉组件：从关联的隐藏 select 读取选项，渲染圆角菜单
+function renderCustomSelect(csId, selectId) {
+  const cs = document.getElementById(csId);
+  const sel = document.getElementById(selectId);
+  const menu = cs.querySelector('.cs-menu');
+  const options = Array.from(sel.options);
+  menu.innerHTML = options.map(o => `
+    <button type="button" class="cs-option ${o.value === sel.value ? 'selected' : ''}" onclick="chooseCustomOption('${csId}','${selectId}','${esc(o.value)}')">${esc(o.text)}</button>
+  `).join('');
+  updateCustomSelectValue(csId, selectId);
+}
+function updateCustomSelectValue(csId, selectId) {
+  const cs = document.getElementById(csId);
+  const sel = document.getElementById(selectId);
+  const valEl = cs.querySelector('.cs-value');
+  const opt = Array.from(sel.options).find(o => o.value === sel.value);
+  valEl.textContent = opt ? opt.text : (sel.value || '请选择');
+}
+function toggleCustomSelect(csId) {
+  const cs = document.getElementById(csId);
+  const isOpen = cs.classList.contains('open');
+  closeAllCustomSelects();
+  if (!isOpen) {
+    // 打开前重新渲染菜单，保证选项最新
+    const selectId = csId === 'cs_type' ? 'f_type' : csId === 'cs_status' ? 'f_status' : 'f_fav';
+    renderCustomSelect(csId, selectId);
+    cs.classList.add('open');
+  }
+}
+function chooseCustomOption(csId, selectId, value) {
+  const sel = document.getElementById(selectId);
+  sel.value = value;
+  // 触发 change 事件，让类型变化时同步图标预览
+  if (selectId === 'f_type') {
+    const ev = new Event('change', { bubbles: true });
+    sel.dispatchEvent(ev);
+  }
+  updateCustomSelectValue(csId, selectId);
+  closeAllCustomSelects();
+}
+function closeAllCustomSelects() {
+  document.querySelectorAll('.custom-select.open').forEach(el => el.classList.remove('open'));
+}
+// 点击页面其他区域关闭下拉
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.custom-select')) {
+    closeAllCustomSelects();
+  }
+});
+
+// ---------- 日期选择器 ----------
+let dateViewYear = new Date().getFullYear();
+let dateViewMonth = new Date().getMonth(); // 0-11
+
+function toggleDatePicker() {
+  const cs = document.getElementById('cs_date');
+  const isOpen = cs.classList.contains('open');
+  closeAllCustomSelects();
+  if (!isOpen) {
+    // 打开时定位到已选日期，否则当前月份
+    const cur = document.getElementById('f_date').value;
+    if (cur) {
+      const d = new Date(cur);
+      dateViewYear = d.getFullYear();
+      dateViewMonth = d.getMonth();
+    } else {
+      const now = new Date();
+      dateViewYear = now.getFullYear();
+      dateViewMonth = now.getMonth();
+    }
+    renderDatePanel();
+    positionDatePanel();
+    cs.classList.add('open');
+  }
+}
+function positionDatePanel() {
+  const panel = document.getElementById('datePanel');
+  const trigger = document.getElementById('cs_date').querySelector('.cs-trigger');
+  const rect = trigger.getBoundingClientRect();
+  const panelW = 280;
+  const panelH = 360; // 估算高度
+  let left = rect.left;
+  let top = rect.bottom + 6;
+  // 右边界越界则向左对齐
+  if (left + panelW > window.innerWidth - 8) {
+    left = window.innerWidth - panelW - 8;
+  }
+  if (left < 8) left = 8;
+  // 底部越界则向上弹出
+  if (top + panelH > window.innerHeight - 8) {
+    top = rect.top - panelH - 6;
+  }
+  if (top < 8) top = 8;
+  panel.style.left = left + 'px';
+  panel.style.top = top + 'px';
+}
+function renderDatePanel() {
+  const el = document.getElementById('datePanel');
+  const cur = document.getElementById('f_date').value;
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+
+  const firstDay = new Date(dateViewYear, dateViewMonth, 1).getDay(); // 0=周日
+  const daysInMonth = new Date(dateViewYear, dateViewMonth + 1, 0).getDate();
+  const daysInPrev = new Date(dateViewYear, dateViewMonth, 0).getDate();
+
+  // 以周一为起始（firstDay 0=周日 -> 6；1=周一 -> 0）
+  const startOffset = (firstDay + 6) % 7;
+
+  let cells = [];
+  // 上月补齐
+  for (let i = startOffset - 1; i >= 0; i--) {
+    const d = daysInPrev - i;
+    const y = dateViewMonth === 0 ? dateViewYear - 1 : dateViewYear;
+    const m = dateViewMonth === 0 ? 12 : dateViewMonth;
+    const ds = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    cells.push(`<button type="button" class="d-cell other" onclick="pickDate('${ds}')">${d}</button>`);
+  }
+  // 当月
+  for (let d = 1; d <= daysInMonth; d++) {
+    const ds = `${dateViewYear}-${String(dateViewMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    let cls = 'd-cell';
+    if (ds === cur) cls += ' selected';
+    if (ds === todayStr) cls += ' today';
+    cells.push(`<button type="button" class="${cls}" onclick="pickDate('${ds}')">${d}</button>`);
+  }
+  // 下月补齐
+  let nextCount = (7 - (startOffset + daysInMonth) % 7) % 7;
+  for (let d = 1; d <= nextCount; d++) {
+    const y = dateViewMonth === 11 ? dateViewYear + 1 : dateViewYear;
+    const m = dateViewMonth === 11 ? 1 : dateViewMonth + 2;
+    const ds = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    cells.push(`<button type="button" class="d-cell other" onclick="pickDate('${ds}')">${d}</button>`);
+  }
+
+  el.innerHTML = `
+    <div class="date-head">
+      <button type="button" class="d-nav" onclick="changeDateMonth(-1)">‹</button>
+      <span class="d-title">${dateViewYear}年${dateViewMonth + 1}月</span>
+      <button type="button" class="d-nav" onclick="changeDateMonth(1)">›</button>
+    </div>
+    <div class="date-week">
+      <span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span>
+    </div>
+    <div class="date-days">${cells.join('')}</div>
+    <div class="date-foot">
+      <button type="button" onclick="clearDate()">清除</button>
+      <button type="button" onclick="pickToday()">今天</button>
+    </div>
+  `;
+}
+function changeDateMonth(delta) {
+  dateViewMonth += delta;
+  if (dateViewMonth < 0) { dateViewMonth = 11; dateViewYear--; }
+  if (dateViewMonth > 11) { dateViewMonth = 0; dateViewYear++; }
+  renderDatePanel();
+}
+function pickDate(ds) {
+  document.getElementById('f_date').value = ds;
+  updateDateValue();
+  closeAllCustomSelects();
+}
+function pickToday() {
+  const now = new Date();
+  const ds = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  document.getElementById('f_date').value = ds;
+  updateDateValue();
+  closeAllCustomSelects();
+}
+function clearDate() {
+  document.getElementById('f_date').value = '';
+  updateDateValue();
+  closeAllCustomSelects();
+}
+function updateDateValue() {
+  const v = document.getElementById('f_date').value;
+  const el = document.getElementById('dateValue');
+  if (v) {
+    el.textContent = v;
+    el.classList.remove('placeholder');
+  } else {
+    el.textContent = '请选择日期';
+    el.classList.add('placeholder');
+  }
+}
+
 function renderTypeOptions() {
   const sel = document.getElementById('f_type');
   sel.innerHTML = categories.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
+  if (sel.value === '' || !categories.includes(sel.value)) {
+    sel.value = categories[0] || '';
+  }
+  renderCustomSelect('cs_type', 'f_type');
 }
 function clearForm() {
   ['f_name','f_brand','f_model','f_date','f_price','f_channel','f_sn','f_note'].forEach(id => document.getElementById(id).value = '');
@@ -854,6 +1140,11 @@ function clearForm() {
   document.getElementById('f_fav').value = '';
   selectedIcon = '';
   updateIconPreview();
+  // 同步自定义下拉显示
+  renderCustomSelect('cs_type', 'f_type');
+  renderCustomSelect('cs_status', 'f_status');
+  renderCustomSelect('cs_fav', 'f_fav');
+  updateDateValue();
 }
 function fillForm(d) {
   document.getElementById('f_name').value = d.name || '';
@@ -869,6 +1160,11 @@ function fillForm(d) {
   document.getElementById('f_note').value = d.note || '';
   selectedIcon = d.icon || '';
   updateIconPreview();
+  // 同步自定义下拉显示
+  renderCustomSelect('cs_type', 'f_type');
+  renderCustomSelect('cs_status', 'f_status');
+  renderCustomSelect('cs_fav', 'f_fav');
+  updateDateValue();
 }
 function closeModal() { document.getElementById('editModal').classList.remove('show'); editingId = null; }
 
