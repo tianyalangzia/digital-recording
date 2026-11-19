@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>数码设备台账</title>
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --card: #ffffff;
+    --text: #1f2329;
+    --muted: #8a919f;
+    --border: #e6e8eb;
+    --primary: #3b7cff;
+    --primary-dark: #2f66d6;
+    --danger: #e5484d;
+    --green: #30a46c;
+    --radius: 12px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+  .container { max-width: 1100px; margin: 0 auto; padding: 24px 20px 60px; }
+
+  header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+  header h1 { font-size: 24px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+  header h1 .logo { width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(135deg, #3b7cff, #6a5cff); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 18px; }
+  .header-actions { display: flex; gap: 10px; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 16px; border-radius: 9px; border: none; cursor: pointer;
+    font-size: 14px; font-weight: 500; transition: all .15s; background: #fff; color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn:hover { border-color: #c9ced6; }
+  .btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .btn-primary:hover { background: var(--primary-dark); border-color: var(--primary-dark); }
+  .btn-ghost { background: transparent; }
+  .btn-sm { padding: 6px 12px; font-size: 13px; }
+  .btn-danger-text { color: var(--danger); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+  /* 统计卡片 */
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin-bottom: 24px; }
+  .stat-card {
+    background: var(--card); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+  }
+  .stat-card .num { font-size: 30px; font-weight: 700; line-height: 1.1; }
+  .stat-card .label { font-size: 13px; color: var(--muted); margin-top: 4px; }
+  .stat-card.clickable { cursor: pointer; transition: all .15s; }
+  .stat-card.clickable:hover { border-color: var(--primary); }
+  .stat-card.accent { background: linear-gradient(135deg, #3b7cff, #6a5cff); color: #fff; border: none; }
+  .stat-card.accent .label { color: rgba(255,255,255,.85); }
+
+  /* 工具栏 */
+  .toolbar { display: flex; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; align-items: center; }
+  .toolbar input, .toolbar select {
+    padding: 9px 12px; border: 1px solid var(--border); border-radius: 9px; font-size: 14px;
+    background: #fff; color: var(--text); outline: none; transition: border .15s;
+  }
+  .toolbar input:focus, .toolbar select:focus { border-color: var(--primary); }
+  .toolbar input { flex: 1; min-width: 200px; }
+  .toolbar .count { color: var(--muted); font-size: 13px; white-space: nowrap; }
+
+  /* 设备列表 */
+  .device-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+  .device-card {
+    background: var(--card); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow);
+    border: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px; transition: all .15s;
+  }
+  .device-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+  .device-card .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+  .device-card .name { font-size: 16px; font-weight: 600; }
+  .device-card .type-badge {
+    font-size: 12px; padding: 3px 10px; border-radius: 20px; background: #eef2ff; color: var(--primary);
+    white-space: nowrap; font-weight: 500;
+  }
+  .device-card .brand { font-size: 13px; color: var(--muted); }
+  .device-card .meta { display: flex; flex-wrap: wrap; gap: 6px; }
+  .device-card .tag { font-size: 12px; padding: 2px 8px; border-radius: 6px; background: #f2f3f5; color: #5a616c; }
+  .status-在用 { background: #e8f7ee; color: var(--green); }
+  .status-备用 { background: #fff6e5; color: #b8860b; }
+  .status-已出售 { background: #eef2ff; color: #5b6b9a; }
+  .status-已报废 { background: #fdecec; color: #c0392b; }
+  .device-card .foot { display: flex; justify-content: space-between; align-items: center; margin-top: auto; }
+  .device-card .price { font-weight: 600; color: var(--text); }
+  .device-card .actions { display: flex; gap: 6px; }
+  .icon-btn { border: none; background: transparent; cursor: pointer; font-size: 14px; color: var(--muted); padding: 4px 6px; border-radius: 6px; }
+  .icon-btn:hover { background: #f2f3f5; color: var(--text); }
+  .icon-btn.del:hover { background: #fdecec; color: var(--danger); }
+
+  .empty { text-align: center; padding: 80px 20px; color: var(--muted); }
+  .empty .big { font-size: 48px; margin-bottom: 12px; }
+
+  /* 弹窗 */
+  .modal-mask { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: none; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
+  .modal-mask.show { display: flex; }
+  .modal { background: #fff; border-radius: 16px; width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+  .modal-head { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: #fff; z-index: 1; }
+  .modal-head h2 { font-size: 18px; font-weight: 600; }
+  .modal-close { border: none; background: transparent; font-size: 22px; cursor: pointer; color: var(--muted); line-height: 1; }
+  .modal-body { padding: 20px 24px; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .form-item { display: flex; flex-direction: column; gap: 6px; }
+  .form-item.full { grid-column: 1 / -1; }
+  .form-item label { font-size: 13px; color: #5a616c; font-weight: 500; }
+  .form-item input, .form-item select, .form-item textarea {
+    padding: 9px 12px; border: 1px solid var(--border); border-radius: 9px; font-size: 14px;
+    outline: none; transition: border .15s; font-family: inherit; background: #fff; color: var(--text);
+  }
+  .form-item input:focus, .form-item select:focus, .form-item textarea:focus { border-color: var(--primary); }
+  .form-item textarea { resize: vertical; min-height: 60px; }
+  .form-item .required::after { content: " *"; color: var(--danger); }
+  .modal-foot { display: flex; justify-content: flex-end; gap: 10px; padding: 16px 24px; border-top: 1px solid var(--border); position: sticky; bottom: 0; background: #fff; }
+
+  /* 详情 */
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 20px; }
+  .detail-item { display: flex; flex-direction: column; }
+  .detail-item .k { font-size: 12px; color: var(--muted); }
+  .detail-item .v { font-size: 14px; }
+  .detail-item.full { grid-column: 1 / -1; }
+
+  .toast { position: fixed; top: 24px; left: 50%; transform: translateX(-50%); background: #1f2329; color: #fff; padding: 10px 20px; border-radius: 9px; font-size: 14px; z-index: 200; opacity: 0; transition: opacity .2s; pointer-events: none; }
+  .toast.show { opacity: 1; }
+
+  @media (max-width: 600px) {
+    .form-grid, .detail-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1><span class="logo">💻</span>数码设备台账</h1>
+    <div class="header-actions">
+      <button class="btn" onclick="exportData()">导出备份</button>
+      <button class="btn" onclick="importData()">导入</button>
+      <button class="btn btn-primary" onclick="openAdd()">＋ 添加设备</button>
+    </div>
+  </header>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="toolbar">
+    <input type="text" id="searchInput" placeholder="搜索名称 / 品牌 / 型号..." oninput="render()">
+    <select id="typeFilter" onchange="render()">
+      <option value="">全部类型</option>
+    </select>
+    <select id="statusFilter" onchange="render()">
+      <option value="">全部状态</option>
+      <option value="在用">在用</option>
+      <option value="备用">备用</option>
+      <option value="已出售">已出售</option>
+      <option value="已报废">已报废</option>
+    </select>
+    <span class="count" id="listCount"></span>
+  </div>
+
+  <div class="device-list" id="deviceList"></div>
+</div>
+
+<!-- 添加/编辑弹窗 -->
+<div class="modal-mask" id="editModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2 id="editTitle">添加设备</h2>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-item">
+          <label class="required">设备名称</label>
+          <input type="text" id="f_name" placeholder="如：iPhone 15 Pro">
+        </div>
+        <div class="form-item">
+          <label>设备类型</label>
+          <select id="f_type"></select>
+        </div>
+        <div class="form-item">
+          <label>品牌</label>
+          <input type="text" id="f_brand" placeholder="如：Apple">
+        </div>
+        <div class="form-item">
+          <label>型号</label>
+          <input type="text" id="f_model" placeholder="如：A3102">
+        </div>
+        <div class="form-item">
+          <label>购买日期</label>
+          <input type="date" id="f_date">
+        </div>
+        <div class="form-item">
+          <label>购买价格（元）</label>
+          <input type="number" id="f_price" placeholder="0" min="0" step="0.01">
+        </div>
+        <div class="form-item">
+          <label>购买渠道</label>
+          <input type="text" id="f_channel" placeholder="如：京东 / 官方店">
+        </div>
+        <div class="form-item">
+          <label>序列号 / IMEI</label>
+          <input type="text" id="f_sn">
+        </div>
+        <div class="form-item">
+          <label>使用状态</label>
+          <select id="f_status">
+            <option value="在用">在用</option>
+            <option value="备用">备用</option>
+            <option value="已出售">已出售</option>
+            <option value="已报废">已报废</option>
+          </select>
+        </div>
+        <div class="form-item">
+          <label>保修截止日期</label>
+          <input type="date" id="f_warranty">
+        </div>
+        <div class="form-item full">
+          <label>备注</label>
+          <textarea id="f_note" placeholder="其他想记录的信息..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" onclick="saveDevice()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 详情弹窗 -->
+<div class="modal-mask" id="detailModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>设备详情</h2>
+      <button class="modal-close" onclick="closeDetail()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="detail-grid" id="detailContent"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="deleteFromDetail()">删除</button>
+      <button class="btn btn-primary" onclick="editFromDetail()">编辑</button>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="importFile" accept=".json" style="display:none">
+<div class="toast" id="toast"></div>
+
+<script>
+const STORAGE_KEY = 'digital_devices';
+const DEVICE_TYPES = ['手机', '电脑', '平板', '耳机', '相机', '智能手表', '游戏机', '其他'];
+const STATUSES = ['在用', '备用', '已出售', '已报废'];
+
+let devices = [];
+let editingId = null;
+let viewingId = null;
+
+// ---------- 数据层 ----------
+function load() {
+  try {
+    devices = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+  } catch (e) {
+    devices = [];
+  }
+}
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(devices));
+}
+
+// ---------- 渲染 ----------
+function render() {
+  const kw = document.getElementById('searchInput').value.trim().toLowerCase();
+  const tf = document.getElementById('typeFilter').value;
+  const sf = document.getElementById('statusFilter').value;
+
+  let filtered = devices.filter(d => {
+    if (tf && d.type !== tf) return false;
+    if (sf && d.status !== sf) return false;
+    if (kw) {
+      const hay = (d.name + ' ' + (d.brand||'') + ' ' + (d.model||'')).toLowerCase();
+      if (!hay.includes(kw)) return false;
+    }
+    return true;
+  });
+
+  renderStats();
+  renderList(filtered);
+}
+
+function renderStats() {
+  const total = devices.length;
+  const inUse = devices.filter(d => d.status === '在用').length;
+  const sold = devices.filter(d => d.status === '已出售').length;
+  const invested = devices.reduce((s, d) => s + (Number(d.price) || 0), 0);
+
+  const el = document.getElementById('stats');
+  el.innerHTML = `
+    <div class="stat-card accent clickable" onclick="clearFilters()">
+      <div class="num">${total}</div>
+      <div class="label">设备总数</div>
+    </div>
+    <div class="stat-card clickable" onclick="filterByType('')">
+      <div class="num">${new Set(devices.map(d=>d.type)).size}</div>
+      <div class="label">设备类型</div>
+    </div>
+    <div class="stat-card clickable" onclick="setStatusFilter('在用')">
+      <div class="num">${inUse}</div>
+      <div class="label">在用设备</div>
+    </div>
+    <div class="stat-card clickable" onclick="setStatusFilter('已出售')">
+      <div class="num">${sold}</div>
+      <div class="label">已出售</div>
+    </div>
+    <div class="stat-card">
+      <div class="num">¥${invested.toLocaleString('zh-CN', {maximumFractionDigits: 2})}</div>
+      <div class="label">累计投入</div>
+    </div>
+  `;
+}
+
+function renderList(list) {
+  const el = document.getElementById('deviceList');
+  document.getElementById('listCount').textContent = `共 ${list.length} 台设备`;
+
+  if (list.length === 0) {
+    el.innerHTML = `<div class="empty"><div class="big">📱</div><p>${devices.length === 0 ? '还没有记录设备，点击右上角"添加设备"开始吧' : '没有符合条件的设备'}</p></div>`;
+    return;
+  }
+
+  el.innerHTML = list.map(d => `
+    <div class="device-card">
+      <div class="top">
+        <div class="name">${esc(d.name)}</div>
+        <span class="type-badge">${esc(d.type)}</span>
+      </div>
+      <div class="brand">${esc(d.brand || '')}${d.model ? ' · ' + esc(d.model) : ''}</div>
+      <div class="meta">
+        <span class="tag status-${esc(d.status)}">${esc(d.status)}</span>
+        ${d.date ? `<span class="tag">📅 ${esc(d.date)}</span>` : ''}
+        ${d.warranty ? `<span class="tag">🛡 ${esc(d.warranty)}</span>` : ''}
+      </div>
+      <div class="foot">
+        <span class="price">${d.price ? '¥' + Number(d.price).toLocaleString('zh-CN', {maximumFractionDigits: 2}) : '—'}</span>
+        <div class="actions">
+          <button class="icon-btn" title="查看" onclick="openDetail('${d.id}')">👁</button>
+          <button class="icon-btn" title="编辑" onclick="openEdit('${d.id}')">✏️</button>
+          <button class="icon-btn del" title="删除" onclick="removeDevice('${d.id}')">🗑</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ---------- 筛选辅助 ----------
+function clearFilters() {
+  document.getElementById('searchInput').value = '';
+  document.getElementById('typeFilter').value = '';
+  document.getElementById('statusFilter').value = '';
+  render();
+}
+function setStatusFilter(s) {
+  document.getElementById('statusFilter').value = s;
+  document.getElementById('typeFilter').value = '';
+  render();
+}
+function filterByType() {
+  document.getElementById('statusFilter').value = '';
+  render();
+}
+
+// ---------- 添加 / 编辑 ----------
+function openAdd() {
+  editingId = null;
+  document.getElementById('editTitle').textContent = '添加设备';
+  clearForm();
+  document.getElementById('editModal').classList.add('show');
+}
+function openEdit(id) {
+  const d = devices.find(x => x.id === id);
+  if (!d) return;
+  editingId = id;
+  document.getElementById('editTitle').textContent = '编辑设备';
+  fillForm(d);
+  document.getElementById('editModal').classList.add('show');
+  if (viewingId) closeDetail();
+}
+function saveDevice() {
+  const name = document.getElementById('f_name').value.trim();
+  if (!name) { toast('请填写设备名称'); return; }
+
+  const data = {
+    name,
+    type: document.getElementById('f_type').value,
+    brand: document.getElementById('f_brand').value.trim(),
+    model: document.getElementById('f_model').value.trim(),
+    date: document.getElementById('f_date').value,
+    price: document.getElementById('f_price').value,
+    channel: document.getElementById('f_channel').value.trim(),
+    sn: document.getElementById('f_sn').value.trim(),
+    status: document.getElementById('f_status').value,
+    warranty: document.getElementById('f_warranty').value,
+    note: document.getElementById('f_note').value.trim()
+  };
+
+  if (editingId) {
+    const idx = devices.findIndex(x => x.id === editingId);
+    if (idx >= 0) devices[idx] = { ...devices[idx], ...data };
+    toast('已更新');
+  } else {
+    data.id = genId();
+    data.createdAt = Date.now();
+    devices.unshift(data);
+    toast('已添加');
+  }
+  save();
+  closeModal();
+  render();
+}
+
+function removeDevice(id) {
+  const d = devices.find(x => x.id === id);
+  if (!d) return;
+  if (!confirm(`确定删除"${d.name}"吗？此操作不可恢复。`)) return;
+  devices = devices.filter(x => x.id !== id);
+  save();
+  render();
+  toast('已删除');
+}
+
+// ---------- 详情 ----------
+function openDetail(id) {
+  const d = devices.find(x => x.id === id);
+  if (!d) return;
+  viewingId = id;
+  const items = [
+    ['设备名称', d.name],
+    ['设备类型', d.type],
+    ['品牌', d.brand || '—'],
+    ['型号', d.model || '—'],
+    ['使用状态', d.status],
+    ['购买日期', d.date || '—'],
+    ['购买价格', d.price ? '¥' + Number(d.price).toLocaleString('zh-CN', {maximumFractionDigits: 2}) : '—'],
+    ['购买渠道', d.channel || '—'],
+    ['序列号 / IMEI', d.sn || '—'],
+    ['保修截止', d.warranty || '—'],
+  ];
+  const html = items.map(([k, v]) => `<div class="detail-item"><span class="k">${k}</span><span class="v">${esc(String(v))}</span></div>`).join('')
+    + `<div class="detail-item full"><span class="k">备注</span><span class="v">${esc(d.note || '—')}</span></div>`;
+  document.getElementById('detailContent').innerHTML = html;
+  document.getElementById('detailModal').classList.add('show');
+}
+function editFromDetail() {
+  if (viewingId) openEdit(viewingId);
+}
+function deleteFromDetail() {
+  if (viewingId) { removeDevice(viewingId); closeDetail(); }
+}
+function closeDetail() { document.getElementById('detailModal').classList.remove('show'); viewingId = null; }
+
+// ---------- 表单辅助 ----------
+function clearForm() {
+  ['f_name','f_brand','f_model','f_date','f_price','f_channel','f_sn','f_warranty','f_note'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f_type').value = DEVICE_TYPES[0];
+  document.getElementById('f_status').value = '在用';
+}
+function fillForm(d) {
+  document.getElementById('f_name').value = d.name || '';
+  document.getElementById('f_type').value = d.type || DEVICE_TYPES[0];
+  document.getElementById('f_brand').value = d.brand || '';
+  document.getElementById('f_model').value = d.model || '';
+  document.getElementById('f_date').value = d.date || '';
+  document.getElementById('f_price').value = d.price || '';
+  document.getElementById('f_channel').value = d.channel || '';
+  document.getElementById('f_sn').value = d.sn || '';
+  document.getElementById('f_status').value = d.status || '在用';
+  document.getElementById('f_warranty').value = d.warranty || '';
+  document.getElementById('f_note').value = d.note || '';
+}
+function closeModal() { document.getElementById('editModal').classList.remove('show'); editingId = null; }
+
+// ---------- 导出 / 导入 ----------
+function exportData() {
+  const blob = new Blob([JSON.stringify(devices, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `数码设备台账备份_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('已导出备份文件');
+}
+function importData() {
+  document.getElementById('importFile').click();
+}
+document.getElementById('importFile').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function() {
+    try {
+      const data = JSON.parse(reader.result);
+      if (!Array.isArray(data)) throw new Error('格式错误');
+      if (!confirm(`将导入 ${data.length} 台设备，是否覆盖当前数据？`)) return;
+      devices = data.map(d => ({ ...d, id: d.id || genId() }));
+      save();
+      render();
+      toast('导入成功');
+    } catch (err) {
+      toast('导入失败：文件格式不正确');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+// ---------- 工具 ----------
+function genId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+// 点击遮罩关闭
+document.getElementById('editModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+document.getElementById('detailModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeDetail(); });
+
+// 初始化
+(function init() {
+  const typeSel = document.getElementById('f_type');
+  const typeFilter = document.getElementById('typeFilter');
+  DEVICE_TYPES.forEach(t => {
+    typeSel.insertAdjacentHTML('beforeend', `<option value="${t}">${t}</option>`);
+    typeFilter.insertAdjacentHTML('beforeend', `<option value="${t}">${t}</option>`);
+  });
+  load();
+  render();
+})();
+</script>
+</body>
+</html>
