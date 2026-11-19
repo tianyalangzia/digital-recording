@@ -18,3 +18,7 @@ Thumbs.db
 # 编辑器
 .vscode/
 .idea/
+
+# 云应用标记与本地工作区配置
+.wbapp_*.genie
+.workbuddy/
