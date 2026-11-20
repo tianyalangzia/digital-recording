@@ -27,6 +27,7 @@
     color: var(--text);
     line-height: 1.5;
     min-height: 100vh;
+    overflow-x: hidden;
   }
   .app {
     max-width: 480px;
@@ -92,21 +93,25 @@
   .list-head .count { font-size: 13px; color: var(--muted); }
   .asset-list { display: flex; flex-direction: column; gap: 12px; }
   .asset-card {
-    background: var(--card); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow);
-    border: 1px solid var(--border); display: flex; align-items: center; gap: 14px; cursor: pointer; transition: all .15s;
+    background: linear-gradient(90deg, #6fd98a 0%, #3bbf5f 60%, #2fa54f 100%);
+    border-radius: 16px; padding: 16px 18px;
+    display: flex; align-items: center; gap: 14px; cursor: pointer; transition: all .15s;
+    color: #fff;
   }
-  .asset-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.08); transform: translateY(-1px); }
+  .asset-card:active { transform: scale(0.98); }
+  .asset-card.retired { background: linear-gradient(90deg, #f2f2f5 0%, #e3e3e8 60%, #d5d5db 100%); color: #8e8e93; }
   .asset-icon {
-    width: 48px; height: 48px; border-radius: 13px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
-    font-size: 24px;
+    width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    font-size: 26px; background: rgba(255,255,255,0.25);
   }
+  .asset-card.retired .asset-icon { background: rgba(0,0,0,0.06); filter: grayscale(1); opacity: 0.6; }
   .asset-main { flex: 1; min-width: 0; }
   .asset-name { font-size: 15px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .asset-sub { font-size: 12px; color: var(--muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .asset-right { text-align: right; flex-shrink: 0; }
-  .asset-price { font-size: 15px; font-weight: 700; }
-  .asset-daily { font-size: 12px; color: var(--green); margin-top: 2px; }
-  .asset-days { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .asset-sub { font-size: 13px; opacity: 0.9; margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .asset-right { text-align: right; flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; }
+  .asset-days { font-size: 26px; font-weight: 700; line-height: 1; }
+  .asset-days .unit { font-size: 13px; font-weight: 500; margin-left: 2px; opacity: 0.85; }
+  .asset-fav { font-size: 14px; margin-top: 3px; }
 
   .empty { text-align: center; padding: 80px 20px; color: var(--muted); }
   .empty .big { font-size: 52px; margin-bottom: 12px; }
@@ -191,14 +196,15 @@
   .date-panel {
     position: fixed; z-index: 400;
     background: #fff; border: 1px solid var(--border); border-radius: 16px;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.15); padding: 14px; width: 280px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.15); padding: 14px;
+    width: min(280px, calc(100vw - 24px));
     display: none;
   }
   .custom-select.open .date-panel { display: block; }
-  .date-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-  .date-head .d-nav { border: none; background: #f2f3f5; width: 30px; height: 30px; border-radius: 8px; cursor: pointer; font-size: 16px; color: #5a616c; display: flex; align-items: center; justify-content: center; transition: background .12s; }
+  .date-head { display: flex; align-items: center; justify-content: space-between; gap: 4px; margin-bottom: 10px; }
+  .date-head .d-nav { border: none; background: #f2f3f5; width: 30px; height: 30px; border-radius: 8px; cursor: pointer; font-size: 16px; color: #5a616c; display: flex; align-items: center; justify-content: center; transition: background .12s; flex-shrink: 0; }
   .date-head .d-nav:hover { background: #e2e5ea; }
-  .date-head .d-title { font-size: 14px; font-weight: 600; }
+  .date-head .d-title { font-size: 14px; font-weight: 600; flex: 1; text-align: center; }
   .date-week { display: grid; grid-template-columns: repeat(7, 1fr); margin-bottom: 4px; }
   .date-week span { text-align: center; font-size: 11px; color: var(--muted); padding: 4px 0; }
   .date-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
@@ -279,6 +285,63 @@
   .login-error { color: var(--danger); font-size: 13px; margin-top: 12px; min-height: 18px; }
   .user-bar { display: flex; align-items: center; gap: 8px; padding: 12px 0; margin-bottom: 16px; }
   .user-bar .uname { font-size: 14px; font-weight: 600; flex: 1; }
+
+  /* ===== 设备详情页（iOS 卡片式） ===== */
+  .detail-page { position: fixed; inset: 0; z-index: 100; background: #f5f5f7; display: none; flex-direction: column; overflow-y: auto; }
+  .detail-page.show { display: flex; }
+  .detail-topbar {
+    position: sticky; top: 0; z-index: 2; display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px;
+  }
+  .detail-topbar .back-btn {
+    width: 44px; height: 44px; border-radius: 50%; border: none; background: #fff; cursor: pointer;
+    font-size: 22px; font-weight: 600; color: #000; display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  .detail-topbar .top-actions {
+    display: flex; align-items: center; gap: 20px; background: #fff; border-radius: 999px;
+    padding: 10px 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  .detail-topbar .act-btn {
+    border: none; background: transparent; cursor: pointer; font-size: 20px; line-height: 1;
+    padding: 0; display: flex; align-items: center; justify-content: center;
+  }
+  .detail-content { padding: 8px 24px 48px; flex: 1; }
+  .detail-hero { text-align: center; margin: 32px 0 24px; }
+  .detail-hero .big-icon {
+    font-size: 72px; line-height: 1; margin-bottom: 24px; display: block;
+  }
+  .detail-hero .d-name { font-size: 26px; font-weight: 700; color: #000; margin-bottom: 16px; }
+  .detail-hero .d-chips { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .d-chip { font-size: 14px; padding: 7px 16px; border-radius: 999px; font-weight: 600; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; }
+  .d-chip .dot { width: 8px; height: 8px; border-radius: 50%; background: #34c759; display: inline-block; }
+  .d-chip.service { background: #eeeef0; color: #1c1c1e; }
+  .d-chip.service.retired { background: #fdecec; color: #c0392b; }
+  .d-chip.service.retired .dot { background: #e5484d; }
+  .d-chip.type { background: #2f7cf6; color: #fff; }
+  .d-chip.days { background: #34c759; color: #fff; }
+  .d-quick { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .d-quick-btn {
+    border: none; cursor: pointer; padding: 15px; border-radius: 16px; background: #efeef1;
+    font-size: 16px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all .15s;
+  }
+  .d-quick-btn:active { transform: scale(0.97); }
+  .d-quick-btn.fav { color: #e5a83b; }
+  .d-quick-btn.fav.active { background: #fbf3df; }
+  .d-quick-btn.retire { color: #e5484d; }
+  .d-card { background: #efeef2; border-radius: 16px; padding: 20px 24px; margin-bottom: 16px; }
+  .d-card .card-title { font-size: 15px; color: #8e8e93; margin-bottom: 16px; font-weight: 500; }
+  .d-card-row { display: flex; justify-content: space-between; align-items: center; }
+  .d-info-col { display: flex; flex-direction: column; }
+  .d-info-col .k { font-size: 15px; color: #8e8e93; }
+  .d-info-col .v { font-size: 18px; font-weight: 600; color: #1c1c1e; margin-top: 4px; }
+  .d-info-col.right { align-items: flex-end; }
+  .d-daily-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .d-daily-head .k { font-size: 15px; color: #8e8e93; }
+  .d-daily-head .v { font-size: 20px; font-weight: 700; color: #1c1c1e; }
+  .fee-line { display: flex; justify-content: space-between; font-size: 15px; padding: 7px 0; }
+  .fee-line .fee-name { color: #3a3a3c; }
+  .fee-line .fee-amount { font-weight: 600; color: #1c1c1e; }
 </style>
 </head>
 <body>
@@ -390,22 +453,6 @@
           <input type="text" id="f_channel" placeholder="如：京东 / 官方店">
         </div>
         <div class="form-item">
-          <label>使用状态</label>
-          <div class="custom-select" id="cs_status">
-            <div class="cs-trigger" onclick="toggleCustomSelect('cs_status')">
-              <span class="cs-value">在用</span>
-              <span class="cs-arrow"></span>
-            </div>
-            <div class="cs-menu"></div>
-          </div>
-          <select id="f_status" style="display:none">
-            <option value="在用">在用</option>
-            <option value="备用">备用</option>
-            <option value="已出售">已出售</option>
-            <option value="已报废">已报废</option>
-          </select>
-        </div>
-        <div class="form-item">
           <label>收藏</label>
           <div class="custom-select" id="cs_fav">
             <div class="cs-trigger" onclick="toggleCustomSelect('cs_fav')">
@@ -467,21 +514,16 @@
   </div>
 </div>
 
-<!-- 详情弹窗 -->
-<div class="modal-mask" id="detailModal">
-  <div class="modal">
-    <div class="modal-head">
-      <h2>设备详情</h2>
-      <button class="modal-close" onclick="closeDetail()">×</button>
-    </div>
-    <div class="modal-body">
-      <div class="detail-grid" id="detailContent"></div>
-    </div>
-    <div class="modal-foot">
-      <button class="btn btn-danger" onclick="deleteFromDetail()">删除</button>
-      <button class="btn btn-primary" onclick="editFromDetail()">编辑</button>
+<!-- 设备详情页（iOS 卡片式） -->
+<div class="detail-page" id="detailPage">
+  <div class="detail-topbar">
+    <button class="back-btn" onclick="closeDetail()">‹</button>
+    <div class="top-actions">
+      <button class="act-btn" onclick="editFromDetail()" title="编辑" style="color:#2f7cf6">✏️</button>
+      <button class="act-btn" onclick="deleteFromDetail()" title="删除" style="color:#e5484d">🗑</button>
     </div>
   </div>
+  <div class="detail-content" id="detailContent"></div>
 </div>
 
 <!-- 统计弹窗 -->
@@ -594,7 +636,6 @@ function assetToDevice(row) {
     date: row.purchase_date,
     price: row.price == null ? '' : String(row.price),
     channel: row.channel,
-    status: row.status || '在用',
     fav: row.fav,
     note: row.note,
     inService: row.in_service == null ? true : row.in_service,
@@ -611,7 +652,6 @@ function deviceToAsset(d) {
     purchase_date: d.date,
     price: (d.price === '' || d.price == null) ? null : Number(d.price),
     channel: d.channel,
-    status: d.status || '在用',
     fav: d.fav,
     note: d.note,
     in_service: d.inService == null ? true : d.inService,
@@ -692,14 +732,21 @@ async function saveCategories() {
 function usageDays(d) {
   if (!d.date) return 0;
   const start = new Date(d.date);
-  const now = new Date();
-  const diff = Math.floor((now - start) / (1000 * 60 * 60 * 24));
+  // 退役设备：天数定格在退役日期；在用设备：算到今天
+  const end = (d.inService != null && d.inService === false && d.retireDate) ? new Date(d.retireDate) : new Date();
+  const diff = Math.floor((end - start) / (1000 * 60 * 60 * 24));
   return diff > 0 ? diff : 0;
+}
+// 设备总投入 = 购买价格 + 所有附加费用
+function totalCost(d) {
+  const price = Number(d.price) || 0;
+  const fees = Array.isArray(d.extraFees) ? d.extraFees.reduce((s, f) => s + (Number(f.amount) || 0), 0) : 0;
+  return price + fees;
 }
 function dailyCost(d) {
   const days = usageDays(d);
   if (!days) return 0;
-  return (Number(d.price) || 0) / days;
+  return totalCost(d) / days;
 }
 function fmtMoney(n) {
   return '¥' + Number(n || 0).toLocaleString('zh-CN', { maximumFractionDigits: 2 });
@@ -724,11 +771,11 @@ function render() {
 }
 
 function renderHero() {
-  const total = devices.reduce((s, d) => s + (Number(d.price) || 0), 0);
+  const total = devices.reduce((s, d) => s + totalCost(d), 0);
   const totalDaily = devices.reduce((s, d) => s + dailyCost(d), 0);
   document.getElementById('totalAsset').textContent = fmtMoney(total);
   document.getElementById('totalDaily').textContent = fmtDaily(totalDaily);
-  const inUse = devices.filter(d => d.status === '在用').length;
+  const inUse = devices.filter(d => d.inService == null || d.inService === true).length;
   document.getElementById('heroTitle').textContent = `我的资产 ${inUse}/${devices.length}`;
 }
 
@@ -785,18 +832,17 @@ function renderList() {
     const days = usageDays(d);
     const daily = dailyCost(d);
     const retired = (d.inService != null && d.inService === false);
-    const sub = retired ? (d.retireDate ? '已退役 · ' + d.retireDate : '已退役') : (d.type || d.status);
+    const sub = `${fmtMoney(totalCost(d))} · ${fmtDaily(daily)}`;
     return `
-    <div class="asset-card" onclick="openDetail('${d.id}')">
-      <div class="asset-icon" style="background:${st.bg}">${st.icon}</div>
+    <div class="asset-card ${retired ? 'retired' : ''}" onclick="openDetail('${d.id}')">
+      <div class="asset-icon">${st.icon}</div>
       <div class="asset-main">
-        <div class="asset-name">${esc(d.name)}${d.fav === '1' ? ' <span style="color:#e5484d">♥</span>' : ''}</div>
-        <div class="asset-sub" style="${retired ? 'color:#c0392b' : ''}">${esc(sub)}</div>
+        <div class="asset-name">${esc(d.name)}</div>
+        <div class="asset-sub">${sub}</div>
       </div>
       <div class="asset-right">
-        <div class="asset-price">${fmtMoney(d.price)}</div>
-        <div class="asset-daily">${fmtDaily(daily)}</div>
-        <div class="asset-days">${days ? days + ' 天' : '—'}</div>
+        <div class="asset-days">${days}<span class="unit">天</span></div>
+        ${d.fav === '1' ? '<div class="asset-fav">★</div>' : ''}
       </div>
     </div>`;
   }).join('');
@@ -861,11 +907,9 @@ function showMine() {
 
 function openStats() {
   const total = devices.length;
-  const inUse = devices.filter(d => d.status === '在用').length;
-  const standby = devices.filter(d => d.status === '备用').length;
-  const sold = devices.filter(d => d.status === '已出售').length;
-  const scrapped = devices.filter(d => d.status === '已报废').length;
-  const invested = devices.reduce((s, d) => s + (Number(d.price) || 0), 0);
+  const inService = devices.filter(d => d.inService == null || d.inService === true).length;
+  const retired = devices.filter(d => d.inService === false).length;
+  const invested = devices.reduce((s, d) => s + totalCost(d), 0);
   const avgPrice = total ? invested / total : 0;
 
   // 分类统计
@@ -874,7 +918,7 @@ function openStats() {
   const typeRows = Object.entries(typeMap).sort((a,b)=>b[1]-a[1])
     .map(([t, c]) => {
       const st = TYPE_STYLE[t] || TYPE_STYLE['其他'];
-      const sum = devices.filter(d => d.type === t).reduce((s,d)=>s+(Number(d.price)||0),0);
+      const sum = devices.filter(d => d.type === t).reduce((s,d)=>s+totalCost(d),0);
       return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f0f1f3">
         <span style="width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:${st.bg}">${st.icon}</span>
         <span style="flex:1;font-size:14px">${t}</span>
@@ -886,15 +930,13 @@ function openStats() {
   document.getElementById('statsContent').innerHTML = `
     <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:18px">
       <div style="background:#f4f5f7;border-radius:12px;padding:14px"><div style="font-size:22px;font-weight:700">${total}</div><div style="font-size:12px;color:var(--muted)">设备总数</div></div>
-      <div style="background:#f4f5f7;border-radius:12px;padding:14px"><div style="font-size:22px;font-weight:700">${inUse}</div><div style="font-size:12px;color:var(--muted)">在用</div></div>
+      <div style="background:#f4f5f7;border-radius:12px;padding:14px"><div style="font-size:22px;font-weight:700">${inService}</div><div style="font-size:12px;color:var(--muted)">服役中</div></div>
       <div style="background:#f4f5f7;border-radius:12px;padding:14px"><div style="font-size:22px;font-weight:700">${fmtMoney(invested)}</div><div style="font-size:12px;color:var(--muted)">累计投入</div></div>
       <div style="background:#f4f5f7;border-radius:12px;padding:14px"><div style="font-size:22px;font-weight:700">${fmtMoney(avgPrice)}</div><div style="font-size:12px;color:var(--muted)">平均单价</div></div>
     </div>
     <div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap">
-      <span style="font-size:12px;padding:4px 12px;border-radius:14px;background:#e8f7ee;color:var(--green)">在用 ${inUse}</span>
-      <span style="font-size:12px;padding:4px 12px;border-radius:14px;background:#fff6e5;color:#b8860b">备用 ${standby}</span>
-      <span style="font-size:12px;padding:4px 12px;border-radius:14px;background:#eef2ff;color:#5b6b9a">已出售 ${sold}</span>
-      <span style="font-size:12px;padding:4px 12px;border-radius:14px;background:#fdecec;color:#c0392b">已报废 ${scrapped}</span>
+      <span style="font-size:12px;padding:4px 12px;border-radius:14px;background:#e8f7ee;color:var(--green)">服役中 ${inService}</span>
+      <span style="font-size:12px;padding:4px 12px;border-radius:14px;background:#fdecec;color:#c0392b">已退役 ${retired}</span>
     </div>
     <div style="font-size:14px;font-weight:600;margin-bottom:8px">分类统计</div>
     ${typeRows || '<div style="color:var(--muted);font-size:13px">暂无数据</div>'}
@@ -1028,7 +1070,6 @@ function saveDevice() {
     date: document.getElementById('f_date').value,
     price: document.getElementById('f_price').value,
     channel: document.getElementById('f_channel').value.trim(),
-    status: document.getElementById('f_status').value,
     fav: document.getElementById('f_fav').value,
     note: document.getElementById('f_note').value.trim(),
     inService: document.getElementById('f_inService').checked,
@@ -1068,26 +1109,93 @@ function openDetail(id) {
   viewingId = id;
   const days = usageDays(d);
   const daily = dailyCost(d);
-  const items = [
-    ['设备名称', d.name],
-    ['设备类型', d.type],
-    ['服役状态', d.inService == null || d.inService ? '正在服役' : '已退役'],
-    ['使用状态', d.status],
-    ['购买日期', d.date || '—'],
-    ['购买价格', fmtMoney(d.price)],
-    ['使用天数', days ? days + ' 天' : '—'],
-    ['日均成本', fmtDaily(daily)],
-    ['购买渠道', d.channel || '—'],
-    ['退役日期', d.retireDate || '—'],
-    ['收藏', d.fav === '1' ? '♥ 已收藏' : '否'],
-  ];
-  const fees = Array.isArray(d.extraFees) && d.extraFees.length ? d.extraFees : [];
-  const feesHtml = fees.map(f => `<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0"><span>${esc(f.name || '费用')}</span><span>¥${Number(f.amount || 0).toLocaleString('zh-CN', {maximumFractionDigits: 2})}</span></div>`).join('');
-  const html = items.map(([k, v]) => `<div class="detail-item"><span class="k">${k}</span><span class="v">${esc(String(v))}</span></div>`).join('')
-    + (fees.length ? `<div class="detail-item full"><span class="k">附加费用</span><span class="v">${feesHtml}</span></div>` : '')
-    + `<div class="detail-item full"><span class="k">备注</span><span class="v">${esc(d.note || '—')}</span></div>`;
+  const retired = (d.inService != null && d.inService === false);
+  const st = getIconStyle(d);
+  const fees = Array.isArray(d.extraFees) ? d.extraFees : [];
+  const feeTotal = fees.reduce((s, f) => s + (Number(f.amount) || 0), 0);
+  const isFav = d.fav === '1';
+
+  const chips = `
+    <span class="d-chip service ${retired ? 'retired' : ''}"><span class="dot"></span>${retired ? '已退役' : '使用中'}</span>
+    <span class="d-chip type">${esc(d.type || '其他')}</span>
+    <span class="d-chip days">${days} 天</span>
+  `;
+
+  const feeHtml = fees.length
+    ? fees.map(f => `<div class="fee-line"><span class="fee-name">${esc(f.name || '费用')}</span><span class="fee-amount">¥${Number(f.amount || 0).toLocaleString('zh-CN', {maximumFractionDigits: 2})}</span></div>`).join('')
+      + `<div class="fee-line" style="border-top:1px solid #e6e8eb;margin-top:6px;padding-top:10px"><span class="fee-name" style="font-weight:600">合计</span><span class="fee-amount" style="color:#e5484d">¥${feeTotal.toLocaleString('zh-CN', {maximumFractionDigits: 2})}</span></div>`
+    : '<div style="color:#c4c9d2;font-size:13px">暂无附加费用</div>';
+
+  const html = `
+    <div class="detail-hero">
+      <span class="big-icon">${st.icon}</span>
+      <div class="d-name">${esc(d.name)}</div>
+      <div class="d-chips">${chips}</div>
+    </div>
+    <div class="d-quick">
+      <button class="d-quick-btn fav ${isFav ? 'active' : ''}" onclick="toggleFavFromDetail()">${isFav ? '★ 已收藏' : '☆ 收藏'}</button>
+      <button class="d-quick-btn retire" onclick="toggleRetireFromDetail()">${retired ? '✓ 重新启用' : '⛔ 退役'}</button>
+    </div>
+    <div class="d-card">
+      <div class="card-title">购入信息</div>
+      <div class="d-card-row">
+        <div class="d-info-col">
+          <span class="k">购入时间</span>
+          <span class="v">${d.date || '—'}</span>
+        </div>
+        <div class="d-info-col right">
+          <span class="k">总投入</span>
+          <span class="v">${fmtMoney(totalCost(d))}</span>
+        </div>
+      </div>
+      ${Number(d.price) ? `<div class="d-card-row" style="margin-top:12px"><div class="d-info-col"><span class="k">购入价格</span><span class="v" style="font-size:14px">${fmtMoney(d.price)}</span></div></div>` : ''}
+      ${d.channel ? `<div class="d-card-row" style="margin-top:12px"><div class="d-info-col"><span class="k">购买渠道</span><span class="v" style="font-size:14px">${esc(d.channel)}</span></div></div>` : ''}
+    </div>
+    <div class="d-card">
+      <div class="d-daily-head">
+        <span class="k">当前日均成本</span>
+        <span class="v">${fmtDaily(daily)}</span>
+      </div>
+      <div class="d-card-row">
+        <div class="d-info-col"><span class="k">使用天数</span><span class="v" style="font-size:15px">${days} 天</span></div>
+        <div class="d-info-col right"><span class="k">日均成本</span><span class="v" style="font-size:15px">${fmtDaily(daily)}</span></div>
+      </div>
+      ${d.retireDate ? `<div class="d-card-row" style="margin-top:12px"><div class="d-info-col"><span class="k">退役日期</span><span class="v" style="font-size:15px">${esc(d.retireDate)}</span></div></div>` : ''}
+    </div>
+    <div class="d-card">
+      <div class="card-title">附加费用</div>
+      ${feeHtml}
+    </div>
+    ${d.note ? `<div class="d-card"><div class="card-title">备注</div><div style="font-size:14px;line-height:1.6">${esc(d.note)}</div></div>` : ''}
+  `;
   document.getElementById('detailContent').innerHTML = html;
-  document.getElementById('detailModal').classList.add('show');
+  document.getElementById('detailPage').classList.add('show');
+}
+
+function toggleFavFromDetail() {
+  const d = devices.find(x => x.id === viewingId);
+  if (!d) return;
+  d.fav = d.fav === '1' ? '' : '1';
+  save();
+  openDetail(viewingId);
+  render();
+}
+function toggleRetireFromDetail() {
+  const d = devices.find(x => x.id === viewingId);
+  if (!d) return;
+  if (d.inService == null || d.inService === true) {
+    // 退役：默认记录今天为退役日期
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+    d.inService = false;
+    d.retireDate = d.retireDate || today;
+  } else {
+    d.inService = true;
+    d.retireDate = '';
+  }
+  save();
+  openDetail(viewingId);
+  render();
 }
 function editFromDetail() {
   if (viewingId) openEdit(viewingId);
@@ -1095,7 +1203,7 @@ function editFromDetail() {
 function deleteFromDetail() {
   if (viewingId) { removeDevice(viewingId); closeDetail(); }
 }
-function closeDetail() { document.getElementById('detailModal').classList.remove('show'); viewingId = null; }
+function closeDetail() { document.getElementById('detailPage').classList.remove('show'); viewingId = null; }
 
 // ---------- 表单辅助 ----------
 // 自定义下拉组件：从关联的隐藏 select 读取选项，渲染圆角菜单
@@ -1122,7 +1230,7 @@ function toggleCustomSelect(csId) {
   closeAllCustomSelects();
   if (!isOpen) {
     // 打开前重新渲染菜单，保证选项最新
-    const selectId = csId === 'cs_type' ? 'f_type' : csId === 'cs_status' ? 'f_status' : 'f_fav';
+    const selectId = csId === 'cs_type' ? 'f_type' : 'f_fav';
     renderCustomSelect(csId, selectId);
     cs.classList.add('open');
   }
@@ -1177,20 +1285,23 @@ function positionPanel(panelId) {
   const panel = document.getElementById(panelId);
   const trigger = panel.parentElement.querySelector('.cs-trigger');
   const rect = trigger.getBoundingClientRect();
-  const panelW = 280;
+  const panelW = Math.min(280, window.innerWidth - 24);
   const panelH = 360; // 估算高度
   let left = rect.left;
   let top = rect.bottom + 6;
+  // 右边界越界则向左对齐
   if (left + panelW > window.innerWidth - 8) {
     left = window.innerWidth - panelW - 8;
   }
   if (left < 8) left = 8;
+  // 底部越界则向上弹出
   if (top + panelH > window.innerHeight - 8) {
     top = rect.top - panelH - 6;
   }
   if (top < 8) top = 8;
   panel.style.left = left + 'px';
   panel.style.top = top + 'px';
+  panel.style.width = panelW + 'px';
 }
 function positionDatePanel() {
   positionPanel('datePanel');
@@ -1236,9 +1347,11 @@ function renderDatePanel() {
 
   el.innerHTML = `
     <div class="date-head">
-      <button type="button" class="d-nav" onclick="changeDateMonth(-1)">‹</button>
+      <button type="button" class="d-nav" onclick="event.stopPropagation();changeDateYear(-1)" title="上一年">«</button>
+      <button type="button" class="d-nav" onclick="event.stopPropagation();changeDateMonth(-1)" title="上一月">‹</button>
       <span class="d-title">${dateViewYear}年${dateViewMonth + 1}月</span>
-      <button type="button" class="d-nav" onclick="changeDateMonth(1)">›</button>
+      <button type="button" class="d-nav" onclick="event.stopPropagation();changeDateMonth(1)" title="下一月">›</button>
+      <button type="button" class="d-nav" onclick="event.stopPropagation();changeDateYear(1)" title="下一年">»</button>
     </div>
     <div class="date-week">
       <span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span>
@@ -1255,6 +1368,13 @@ function changeDateMonth(delta) {
   if (dateViewMonth < 0) { dateViewMonth = 11; dateViewYear--; }
   if (dateViewMonth > 11) { dateViewMonth = 0; dateViewYear++; }
   renderDatePanel();
+  // 重新确保面板保持打开（避免 innerHTML 重建导致的事件冒泡误关闭）
+  document.getElementById('cs_date').classList.add('open');
+}
+function changeDateYear(delta) {
+  dateViewYear += delta;
+  renderDatePanel();
+  document.getElementById('cs_date').classList.add('open');
 }
 function pickDate(ds) {
   document.getElementById('f_date').value = ds;
@@ -1343,9 +1463,11 @@ function renderRetireDatePanel() {
   }
   el.innerHTML = `
     <div class="date-head">
-      <button type="button" class="d-nav" onclick="changeRetireMonth(-1)">‹</button>
+      <button type="button" class="d-nav" onclick="event.stopPropagation();changeRetireYear(-1)" title="上一年">«</button>
+      <button type="button" class="d-nav" onclick="event.stopPropagation();changeRetireMonth(-1)" title="上一月">‹</button>
       <span class="d-title">${retireViewYear}年${retireViewMonth + 1}月</span>
-      <button type="button" class="d-nav" onclick="changeRetireMonth(1)">›</button>
+      <button type="button" class="d-nav" onclick="event.stopPropagation();changeRetireMonth(1)" title="下一月">›</button>
+      <button type="button" class="d-nav" onclick="event.stopPropagation();changeRetireYear(1)" title="下一年">»</button>
     </div>
     <div class="date-week"><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span></div>
     <div class="date-days">${cells.join('')}</div>
@@ -1359,6 +1481,13 @@ function changeRetireMonth(delta) {
   if (retireViewMonth < 0) { retireViewMonth = 11; retireViewYear--; }
   if (retireViewMonth > 11) { retireViewMonth = 0; retireViewYear++; }
   renderRetireDatePanel();
+  // 重新确保面板保持打开
+  document.getElementById('cs_retireDate').classList.add('open');
+}
+function changeRetireYear(delta) {
+  retireViewYear += delta;
+  renderRetireDatePanel();
+  document.getElementById('cs_retireDate').classList.add('open');
 }
 function pickRetireDate(ds) {
   document.getElementById('f_retireDate').value = ds;
@@ -1430,7 +1559,6 @@ function renderTypeOptions() {
 function clearForm() {
   ['f_name','f_date','f_price','f_channel','f_note','f_retireDate'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('f_type').value = categories[0] || '';
-  document.getElementById('f_status').value = '在用';
   document.getElementById('f_fav').value = '';
   selectedIcon = '';
   formFees = [];
@@ -1440,7 +1568,6 @@ function clearForm() {
   updateIconPreview();
   // 同步自定义下拉显示
   renderCustomSelect('cs_type', 'f_type');
-  renderCustomSelect('cs_status', 'f_status');
   renderCustomSelect('cs_fav', 'f_fav');
   updateDateValue();
   updateRetireDateValue();
@@ -1451,7 +1578,6 @@ function fillForm(d) {
   document.getElementById('f_date').value = d.date || '';
   document.getElementById('f_price').value = d.price || '';
   document.getElementById('f_channel').value = d.channel || '';
-  document.getElementById('f_status').value = d.status || '在用';
   document.getElementById('f_fav').value = d.fav || '';
   document.getElementById('f_note').value = d.note || '';
   selectedIcon = d.icon || '';
@@ -1463,7 +1589,6 @@ function fillForm(d) {
   updateIconPreview();
   // 同步自定义下拉显示
   renderCustomSelect('cs_type', 'f_type');
-  renderCustomSelect('cs_status', 'f_status');
   renderCustomSelect('cs_fav', 'f_fav');
   updateDateValue();
   updateRetireDateValue();
@@ -1539,7 +1664,6 @@ function toast(msg) {
 
 // 点击遮罩关闭
 document.getElementById('editModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
-document.getElementById('detailModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeDetail(); });
 document.getElementById('statsModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeStats(); });
 document.getElementById('categoryModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeCategoryMgr(); });
 document.getElementById('iconModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeIconPanel(); });
